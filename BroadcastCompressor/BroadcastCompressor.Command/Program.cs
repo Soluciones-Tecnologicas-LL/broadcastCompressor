@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using FFMpegCore;
@@ -22,7 +23,7 @@ namespace BroadcastCompressor.Command
 
         static Program()
         {
-            _logger = LogManager.GetLogger("LogToFile");
+            _logger = LogManager.GetLogger("FileLogger");
 
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
@@ -92,11 +93,31 @@ namespace BroadcastCompressor.Command
                         var tempFile = Path.Combine(_recordingFolder, "Temp.mp4");
             
                         var inputVideo = FFProbe.Analyse(currentFileInfo.FullName);
-                        var processSuccessful = FFMpeg.Convert(inputVideo, tempFile, VideoType.Mp4);
+
+                        var scale = (double)inputVideo.PrimaryVideoStream.Height / (int)VideoSize.Ld;
+                        var outputSize = new Size((int) (inputVideo.PrimaryVideoStream.Width / scale),
+                            (int) (inputVideo.PrimaryVideoStream.Height / scale));
+
+                        if (outputSize.Width % 2 != 0)
+                        {
+                            outputSize.Width += 1;
+                        }
+
+                        var processSuccessful = FFMpegArguments
+                            .FromInputFiles(true, inputVideo.Path)
+                            .UsingMultithreading(true)
+                            .WithVideoCodec(VideoCodec.LibX264)
+                            .WithVideoBitrate(350)
+                            .Scale(outputSize)
+                            .WithSpeedPreset(Speed.SuperFast)
+                            .WithAudioCodec(AudioCodec.Aac)
+                            .WithAudioBitrate(AudioQuality.Low)
+                            .OutputToFile(tempFile).ProcessSynchronously();
+
 
                         if (processSuccessful)
                         {
-                            var mp4FileName = currentFileInfo.Name.Replace(".mpg", ".mp4");
+                            var mp4FileName = currentFileInfo.Name.Replace(currentFileInfo.Extension, ".mp4");
                             var sourceFile = Path.Combine(_recordingFolder, mp4FileName);
 
                             File.Move(tempFile, sourceFile, true);
@@ -128,7 +149,7 @@ namespace BroadcastCompressor.Command
                 stopWatch.Stop();
 
                 var elapsedTimeTrace =
-                    ($"Tiempo transcurrido: {stopWatch.Elapsed.Hours} (hh) : {stopWatch.Elapsed.Minutes} (mm)");
+                    $"Tiempo transcurrido: {stopWatch.Elapsed.Hours} (hh) : {stopWatch.Elapsed.Minutes} (mm) : {stopWatch.Elapsed.Seconds} (ss)";
                 Console.WriteLine(elapsedTimeTrace);
                 _logger.Info(elapsedTimeTrace);
 
