@@ -16,8 +16,8 @@ This console application is intended to compress large video files into mp4 file
   
   {
     "OperatorNumber": 1,
-    "RecordingFolder": "D:\\Work\\SolucionesTecnologicasLL\\ParticipacionCiudadana\\MonitoreoMedios2020\\testGrabacionFolder",
-    "CompressedFilesDestinationFolder": "D:\\Work\\SolucionesTecnologicasLL\\ParticipacionCiudadana\\MonitoreoMedios2020\\testDestinoFolder",
+    "RecordingFolder": "D:\\testRecordingFolder",
+    "CompressedFilesDestinationFolder": "D:\\testDestinationFolder",
     "FilesToCompress": ["*.ts" ]
   }
   
